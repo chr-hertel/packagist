@@ -159,6 +159,7 @@ class ApiController extends Controller
     public function editPackageAction(Request $request, Package $package, ValidatorInterface $validator, StatsDClient $statsd): JsonResponse
     {
         $user = $this->findUser($request);
+        // TODO: Convert To Voter
         if ((!$user || !$package->getMaintainers()->contains($user)) && !$this->isGranted('ROLE_EDIT_PACKAGES')) {
             throw new AccessDeniedException;
         }

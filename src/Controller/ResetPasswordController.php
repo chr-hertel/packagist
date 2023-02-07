@@ -54,7 +54,7 @@ class ResetPasswordController extends Controller
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 $recaptchaVerifier->verify();
-            } catch (RecaptchaException $e) {
+            } catch (RecaptchaException) {
                 $this->addFlash('error', 'Invalid ReCaptcha. Please try again.');
 
                 return $this->redirectToRoute('request_pwd_reset');
@@ -120,7 +120,7 @@ class ResetPasswordController extends Controller
 
             try {
                 $userChecker->checkPreAuth($user);
-            } catch (AuthenticationException $e) {
+            } catch (AuthenticationException) {
                 // skip authenticating if any pre-auth check does not pass
             }
 

@@ -63,6 +63,7 @@ class ProfileController extends Controller
             'user' => $user,
         ];
 
+        // TODO: Convert To Voter
         if ($this->isGranted('ROLE_ANTISPAM')) {
             $data['spammerForm'] = $this->createFormBuilder([])->getForm()->createView();
         }
@@ -114,6 +115,7 @@ class ProfileController extends Controller
     #[Route(path: '/profile/edit', name: 'edit_profile')]
     public function editAction(Request $request): Response
     {
+        // TODO: Convert To Voter
         $user = $this->getUser();
         if (!is_object($user)) {
             throw $this->createAccessDeniedException('This user does not have access to this section.');

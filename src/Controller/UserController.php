@@ -85,13 +85,10 @@ class UserController extends Controller
         return $this->redirectToRoute('my_profile');
     }
 
+    #[IsGranted('ROLE_ANTISPAM', message: 'This user can not mark others as spammers')]
     #[Route(path: '/spammers/{name}/', name: 'mark_spammer', methods: ['POST'])]
     public function markSpammerAction(Request $req, #[VarName('name')] User $user): RedirectResponse
     {
-        if (!$this->isGranted('ROLE_ANTISPAM')) {
-            throw $this->createAccessDeniedException('This user can not mark others as spammers');
-        }
-
         $form = $this->createFormBuilder([])->getForm();
 
         $form->submit($req->request->all('form'));
@@ -128,9 +125,7 @@ class UserController extends Controller
             $this->addFlash('success', $user->getUsername().' has been marked as a spammer');
         }
 
-        return $this->redirect(
-            $this->generateUrl("user_profile", ["name" => $user->getUsername()])
-        );
+        return $this->redirectToRoute('user_profile', ['name' => $user->getUsername()]);
     }
 
     #[Route(path: '/users/{name}/favorites/', name: 'user_favorites', methods: ['GET'])]
@@ -162,6 +157,7 @@ class UserController extends Controller
     #[Route(path: '/users/{name}/favorites/', name: 'user_add_fav', defaults: ['_format' => 'json'], methods: ['POST'])]
     public function postFavoriteAction(Request $req, #[VarName('name')] User $user, #[CurrentUser] User $loggedUser, FavoriteManager $favoriteManager): Response
     {
+        // TODO: Convert To Voter
         if ($user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You can only change your own favorites');
         }
@@ -189,6 +185,7 @@ class UserController extends Controller
         FavoriteManager $favoriteManager,
     ): Response
     {
+        // TODO: Convert To Voter
         if ($user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You can only change your own favorites');
         }
@@ -202,6 +199,7 @@ class UserController extends Controller
     #[Route(path: '/users/{name}/delete', name: 'user_delete', methods: ['POST'])]
     public function deleteUserAction(#[VarName('name')] User $user, #[CurrentUser] User $loggedUser, Request $req, TokenStorageInterface $storage, EventDispatcherInterface $mainEventDispatcher): RedirectResponse
     {
+        // TODO: Convert To Voter
         if (!$this->isGranted('ROLE_ADMIN') && $user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You cannot delete this user');
         }
@@ -241,6 +239,7 @@ class UserController extends Controller
     #[Route(path: '/users/{name}/2fa/', name: 'user_2fa_configure', methods: ['GET'])]
     public function configureTwoFactorAuthAction(#[VarName('name')] User $user, #[CurrentUser] User $loggedUser, Request $req): Response
     {
+        // TODO: Convert To Voter
         if (!$this->isGranted('ROLE_DISABLE_2FA') && $user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You cannot change this user\'s two-factor authentication settings');
         }
@@ -259,6 +258,7 @@ class UserController extends Controller
     #[Route(path: '/users/{name}/2fa/enable', name: 'user_2fa_enable', methods: ['GET', 'POST'])]
     public function enableTwoFactorAuthAction(Request $req, #[VarName('name')] User $user, #[CurrentUser] User $loggedUser, TotpAuthenticatorInterface $authenticator, TwoFactorAuthManager $authManager): Response
     {
+        // TODO: Convert To Voter
         if ($user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You cannot change this user\'s two-factor authentication settings');
         }
@@ -323,6 +323,7 @@ class UserController extends Controller
     #[Route(path: '/users/{name}/2fa/confirm', name: 'user_2fa_confirm', methods: ['GET'])]
     public function confirmTwoFactorAuthAction(#[VarName('name')] User $user, #[CurrentUser] User $loggedUser, Request $req): Response
     {
+        // TODO: Convert To Voter
         if ($user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You cannot change this user\'s two-factor authentication settings');
         }
@@ -343,6 +344,7 @@ class UserController extends Controller
     #[Route(path: '/users/{name}/2fa/disable', name: 'user_2fa_disable', methods: ['GET'])]
     public function disableTwoFactorAuthAction(Request $req, #[VarName('name')] User $user, #[CurrentUser] User $loggedUser, CsrfTokenManagerInterface $csrfTokenManager, TwoFactorAuthManager $authManager): Response
     {
+        // TODO: Convert To Voter
         if (!$this->isGranted('ROLE_DISABLE_2FA') && $user->getId() !== $loggedUser->getId()) {
             throw $this->createAccessDeniedException('You cannot change this user\'s two-factor authentication settings');
         }

@@ -166,7 +166,7 @@ class WebController extends Controller
                 'labels' => array_keys($dlChartMonthly),
                 'values' => $redis->mget(array_values($dlChartMonthly)),
             ];
-        } catch (ConnectionException $e) {
+        } catch (ConnectionException) {
             $downloads = 'N/A';
             $dlChart = $dlChartMonthly = null;
         }

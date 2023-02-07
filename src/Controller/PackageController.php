@@ -69,11 +69,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class PackageController extends Controller
 {
     public function __construct(
-        private ProviderManager $providerManager,
-        private PackageManager $packageManager,
-        private Scheduler $scheduler,
-        private FavoriteManager $favoriteManager,
-        private DownloadManager $downloadManager,
+        private readonly ProviderManager $providerManager,
+        private readonly PackageManager $packageManager,
+        private readonly Scheduler $scheduler,
+        private readonly FavoriteManager $favoriteManager,
+        private readonly DownloadManager $downloadManager,
     ) {
     }
 
@@ -146,7 +146,7 @@ class PackageController extends Controller
 
         try {
             $since = new DateTimeImmutable('@'.$since);
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return new JsonResponse(['error' => 'Invalid "since" query parameter, make sure you store the timestamp returned and re-use it in the next query. Use '.$this->generateUrl('updated_packages', ['since' => time() - 180], UrlGeneratorInterface::ABSOLUTE_URL).' to initialize it.'], 400);
         }
 
@@ -236,7 +236,7 @@ class PackageController extends Controller
     }
 
     #[Route(path: '/packages/fetch-info', name: 'submit.fetch_info', defaults: ['_format' => 'json'])]
-    public function fetchInfoAction(Request $req, RouterInterface $router, #[CurrentUser] User $user): JsonResponse
+    public function fetchInfoAction(Request $req, #[CurrentUser] User $user): JsonResponse
     {
         $package = new Package;
         $package->addMaintainer($user);
@@ -321,10 +321,10 @@ class PackageController extends Controller
             throw new NotFoundHttpException('Package not found');
         }
         if (!str_contains(trim($name, '/'), '/')) {
-            return $this->redirect($this->generateUrl('view_vendor', ['vendor' => $name, '_format' => $format]));
+            return $this->redirectToRoute('view_vendor', ['vendor' => $name, '_format' => $format]);
         }
 
-        return $this->redirect($this->generateUrl('view_package', ['name' => trim($name, '/'), '_format' => $format]));
+        return $this->redirectToRoute('view_package', ['name' => trim($name, '/'), '_format' => $format]);
     }
 
     #[Route(path: '/providers/{name}.{_format}', name: 'view_providers', requirements: ['name' => '[A-Za-z0-9/_.-]+?', '_format' => '(json)'], defaults: ['_format' => 'html'], methods: ['GET'])]
@@ -337,7 +337,7 @@ class PackageController extends Controller
                 return new JsonResponse(['providers' => []]);
             }
 
-            return $this->redirect($this->generateUrl('search_web', ['q' => $name, 'reason' => 'package_not_found']));
+            return $this->redirectToRoute('search_web', ['q' => $name, 'reason' => 'package_not_found']);
         }
 
         if ($req->getRequestFormat() !== 'json') {
@@ -360,7 +360,7 @@ class PackageController extends Controller
 
                 return $trendiness[$a->getId()] > $trendiness[$b->getId()] ? -1 : 1;
             });
-        } catch (ConnectionException $e) {
+        } catch (ConnectionException) {
         }
 
         if ($req->getRequestFormat() === 'json') {
@@ -384,13 +384,10 @@ class PackageController extends Controller
         ]);
     }
 
+    #[IsGranted('ROLE_ANTISPAM', statusCode: 404)]
     #[Route(path: '/spam', name: 'view_spam', defaults: ['_format' => 'html'], methods: ['GET'])]
     public function viewSpamAction(Request $req, CsrfTokenManagerInterface $csrfTokenManager): Response
     {
-        if (!$this->getUser() || !$this->isGranted('ROLE_ANTISPAM')) {
-            throw new NotFoundHttpException();
-        }
-
         $page = max(1, $req->query->getInt('page', 1));
 
         $repo = $this->getEM()->getRepository(Package::class);
@@ -463,18 +460,19 @@ class PackageController extends Controller
 
         try {
             $package = $repo->getPartialPackageByNameWithVersions($name);
-        } catch (NoResultException $e) {
+        } catch (NoResultException) {
             if ('json' === $req->getRequestFormat()) {
                 return new JsonResponse(['status' => 'error', 'message' => 'Package not found'], 404);
             }
 
             if ($repo->findProviders($name)) {
-                return $this->redirect($this->generateUrl('view_providers', ['name' => $name]));
+                return $this->redirectToRoute('view_providers', ['name' => $name]);
             }
 
-            return $this->redirect($this->generateUrl('search_web', ['q' => $name, 'reason' => 'package_not_found']));
+            return $this->redirectToRoute('search_web', ['q' => $name, 'reason' => 'package_not_found']);
         }
 
+        // TODO: Convert To Voter
         if ($package->isAbandoned() && $package->getReplacementPackage() === 'spam/spam' && !$this->isGranted('ROLE_ADMIN')) {
             throw new NotFoundHttpException('This is a spam package');
         }
@@ -492,7 +490,7 @@ class PackageController extends Controller
                 }
                 $data['downloads'] = $this->downloadManager->getDownloads($package);
                 $data['favers'] = $this->favoriteManager->getFaverCount($package);
-            } catch (\RuntimeException | ConnectionException $e) {
+            } catch (\RuntimeException | ConnectionException) {
                 $data['downloads'] = null;
                 $data['favers'] = null;
             }
@@ -650,10 +648,10 @@ class PackageController extends Controller
             }
 
             if ($repo->findProviders($name)) {
-                return $this->redirect($this->generateUrl('view_providers', ['name' => $name]));
+                return $this->redirectToRoute('view_providers', ['name' => $name]);
             }
 
-            return $this->redirect($this->generateUrl('search_web', ['q' => $name, 'reason' => 'package_not_found']));
+            return $this->redirectToRoute('search_web', ['q' => $name, 'reason' => 'package_not_found']);
         }
 
         $versions = $package->getVersions();
@@ -698,7 +696,7 @@ class PackageController extends Controller
                 'package/version_details.html.twig',
                 ['version' => $repo->getFullVersion($versionId)]
             );
-        } catch (NoResultException $e) {
+        } catch (NoResultException) {
             return new JsonResponse(['status' => 'error', 'message' => 'The version could not be found, it may have been deleted in the meantime? Try reloading the page.'], 404);
         }
 
@@ -717,6 +715,7 @@ class PackageController extends Controller
         }
         $package = $version->getPackage();
 
+        // TODO: Convert To Voter
         if (!$package->isMaintainer($user) && !$this->isGranted('ROLE_DELETE_PACKAGES')) {
             throw new AccessDeniedException;
         }
@@ -743,6 +742,7 @@ class PackageController extends Controller
             return new JsonResponse(['status' => 'error', 'message' => 'Package not found'], 404);
         }
 
+        // TODO: Convert To Voter
         if ($package->isAbandoned() && $package->getReplacementPackage() === 'spam/spam') {
             throw new NotFoundHttpException('This is a spam package');
         }
@@ -906,6 +906,7 @@ class PackageController extends Controller
     #[Route(path: '/packages/{name}/edit', name: 'edit_package', requirements: ['name' => '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?'])]
     public function editAction(Request $req, Package $package, #[CurrentUser] ?User $user = null): Response
     {
+        // TODO: Convert To Voter
         if (!$package->isMaintainer($user) && !$this->isGranted('ROLE_EDIT_PACKAGES')) {
             throw new AccessDeniedException;
         }
@@ -939,6 +940,7 @@ class PackageController extends Controller
     #[Route(path: '/packages/{name}/abandon', name: 'abandon_package', requirements: ['name' => '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?'])]
     public function abandonAction(Request $request, Package $package, #[CurrentUser] ?User $user = null): Response
     {
+        // TODO: Convert To Voter
         if (!$package->isMaintainer($user) && !$this->isGranted('ROLE_EDIT_PACKAGES')) {
             throw new AccessDeniedException;
         }
@@ -969,6 +971,7 @@ class PackageController extends Controller
     #[Route(path: '/packages/{name}/unabandon', name: 'unabandon_package', requirements: ['name' => '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?'])]
     public function unabandonAction(Package $package, #[CurrentUser] ?User $user = null): RedirectResponse
     {
+        // TODO: Convert To Voter
         if (!$package->isMaintainer($user) && !$this->isGranted('ROLE_EDIT_PACKAGES')) {
             throw new AccessDeniedException;
         }
@@ -1117,7 +1120,7 @@ class PackageController extends Controller
             $package = $this->getEM()
                 ->getRepository(Package::class)
                 ->getPackageByName($name);
-        } catch (NoResultException $e) {
+        } catch (NoResultException) {
             return new JsonResponse(['status' => 'error', 'message' => 'Package not found'], 404);
         }
 
@@ -1462,6 +1465,7 @@ class PackageController extends Controller
             return null;
         }
 
+        // TODO: Convert To Voter
         if (!$this->isGranted('ROLE_EDIT_PACKAGES') && !$package->isMaintainer($user)) {
             return null;
         }
@@ -1478,6 +1482,7 @@ class PackageController extends Controller
             return null;
         }
 
+        // TODO: Convert To Voter
         if (1 === $package->getMaintainers()->count() || (!$this->isGranted('ROLE_EDIT_PACKAGES') && !$package->isMaintainer($user))) {
             return null;
         }
@@ -1497,6 +1502,7 @@ class PackageController extends Controller
         }
 
         // super admins bypass additional checks
+        // TODO: Convert To Voter
         if (!$this->isGranted('ROLE_DELETE_PACKAGES')) {
             // non maintainers can not delete
             if (!$package->isMaintainer($user)) {
@@ -1505,7 +1511,7 @@ class PackageController extends Controller
 
             try {
                 $downloads = $this->downloadManager->getTotalDownloads($package);
-            } catch (ConnectionException $e) {
+            } catch (ConnectionException) {
                 return null;
             }
 
