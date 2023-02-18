@@ -17,8 +17,6 @@ use App\Entity\Job;
 use App\Entity\Package;
 use App\Entity\User;
 use App\Form\Type\ProfileFormType;
-use App\Model\DownloadManager;
-use App\Model\FavoriteManager;
 use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Pagerfanta\Pagerfanta;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,14 +28,14 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 class ProfileController extends Controller
 {
     #[Route(path: '/profile/', name: 'my_profile')]
-    public function myProfile(Request $req, FavoriteManager $favMgr, DownloadManager $dlMgr, #[CurrentUser] User $user): Response
+    public function myProfile(Request $req, #[CurrentUser] User $user): Response
     {
         $packages = $this->getUserPackages($req, $user);
         $lastGithubSync = $this->doctrine->getRepository(Job::class)->getLastGitHubSyncJob($user->getId());
 
         $data = [
             'packages' => $packages,
-            'meta' => $this->getPackagesMetadata($favMgr, $dlMgr, $packages),
+            'meta' => $this->getPackagesMetadata($packages),
             'user' => $user,
             'githubSync' => $lastGithubSync,
         ];
@@ -53,13 +51,13 @@ class ProfileController extends Controller
     }
 
     #[Route(path: '/users/{name}/', name: 'user_profile')]
-    public function publicProfile(Request $req, #[VarName('name')] User $user, FavoriteManager $favMgr, DownloadManager $dlMgr, #[CurrentUser] ?User $loggedUser = null): Response
+    public function publicProfile(Request $req, #[VarName('name')] User $user, #[CurrentUser] ?User $loggedUser = null): Response
     {
         $packages = $this->getUserPackages($req, $user);
 
         $data = [
             'packages' => $packages,
-            'meta' => $this->getPackagesMetadata($favMgr, $dlMgr, $packages),
+            'meta' => $this->getPackagesMetadata($packages),
             'user' => $user,
         ];
 
@@ -79,7 +77,7 @@ class ProfileController extends Controller
 
     #[Route(path: '/users/{name}/packages/', name: 'user_packages')]
     #[Route(path: '/users/{name}/packages.json', name: 'user_packages_json', defaults: ['_format' => 'json'])]
-    public function packagesAction(Request $req, #[VarName('name')] User $user, FavoriteManager $favMgr, DownloadManager $dlMgr): Response
+    public function packagesAction(Request $req, #[VarName('name')] User $user): Response
     {
         $packages = $this->getUserPackages($req, $user);
 
@@ -106,7 +104,7 @@ class ProfileController extends Controller
             'user/packages.html.twig',
             [
                 'packages' => $packages,
-                'meta' => $this->getPackagesMetadata($favMgr, $dlMgr, $packages),
+                'meta' => $this->getPackagesMetadata($packages),
                 'user' => $user,
             ]
         );

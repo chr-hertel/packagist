@@ -12,8 +12,6 @@
 
 namespace App\Controller;
 
-use App\Model\DownloadManager;
-use App\Model\FavoriteManager;
 use Doctrine\DBAL\ConnectionException;
 use App\Entity\Package;
 use App\Entity\Version;
@@ -66,7 +64,7 @@ class ExploreController extends Controller
     }
 
     #[Route(path: '/popular.{_format}', name: 'browse_popular', defaults: ['_format' => 'html'])]
-    public function popularAction(Request $req, RedisClient $redis, FavoriteManager $favMgr, DownloadManager $dlMgr): Response
+    public function popularAction(Request $req, RedisClient $redis): Response
     {
         $perPage = $req->query->getInt('per_page', 15);
         try {
@@ -103,7 +101,7 @@ class ExploreController extends Controller
         $data = [
             'packages' => $packages,
         ];
-        $data['meta'] = $this->getPackagesMetadata($favMgr, $dlMgr, $data['packages']);
+        $data['meta'] = $this->getPackagesMetadata($data['packages']);
 
         if ($req->getRequestFormat() === 'json') {
             $result = [

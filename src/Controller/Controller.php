@@ -12,32 +12,39 @@
 
 namespace App\Controller;
 
+use App\Util\DoctrineTrait;
 use Doctrine\Persistence\ManagerRegistry;
+use Predis\Connection\ConnectionException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Entity\Package;
 use App\Model\DownloadManager;
 use App\Model\FavoriteManager;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * @author Jordi Boggiano <j.boggiano@seld.be>
  */
 abstract class Controller extends AbstractController
 {
-    use \App\Util\DoctrineTrait;
+    use DoctrineTrait;
 
     protected ManagerRegistry $doctrine;
+    protected FavoriteManager $favoriteManager;
+    protected DownloadManager $downloadManager;
 
-    #[\Symfony\Contracts\Service\Attribute\Required]
-    public function setDeps(ManagerRegistry $doctrine): void
+    #[Required]
+    public function setDeps(ManagerRegistry $doctrine, FavoriteManager $favoriteManager, DownloadManager $downloadManager): void
     {
         $this->doctrine = $doctrine;
+        $this->favoriteManager = $favoriteManager;
+        $this->downloadManager = $downloadManager;
     }
 
     /**
      * @param array<Package|array{id: int}> $packages
      * @return array{downloads: array<int, int>, favers: array<int, int>}
      */
-    protected function getPackagesMetadata(FavoriteManager $favMgr, DownloadManager $dlMgr, iterable $packages): array
+    protected function getPackagesMetadata(iterable $packages): array
     {
         $downloads = [];
         $favorites = [];
@@ -50,7 +57,7 @@ abstract class Controller extends AbstractController
                 if ($package instanceof Package) {
                     $ids[] = $package->getId();
                     // fetch one by one to avoid re-fetching the github stars as we already have them on the package object
-                    $favorites[$package->getId()] = $favMgr->getFaverCount($package);
+                    $favorites[$package->getId()] = $this->favoriteManager->getFaverCount($package);
                 } elseif (is_array($package)) {
                     $ids[] = $package['id'];
                     // fetch all in one query if we do not have objects
@@ -60,11 +67,11 @@ abstract class Controller extends AbstractController
                 }
             }
 
-            $downloads = $dlMgr->getPackagesDownloads($ids);
+            $downloads = $this->downloadManager->getPackagesDownloads($ids);
             if ($search) {
-                $favorites = $favMgr->getFaverCounts($ids);
+                $favorites = $this->favoriteManager->getFaverCounts($ids);
             }
-        } catch (\Predis\Connection\ConnectionException $e) {
+        } catch (ConnectionException) {
         }
 
         return ['downloads' => $downloads, 'favers' => $favorites];
