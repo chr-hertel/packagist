@@ -133,11 +133,7 @@ class ExploreController extends Controller
                 $result['next'] = $this->generateUrl('browse_popular', $params, UrlGeneratorInterface::ABSOLUTE_URL);
             }
 
-            $response = new JsonResponse($result);
-            $response->setSharedMaxAge(900);
-            $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-            return $response;
+            return $this->cachedJson($result, 900);
         }
 
         return $this->render('explore/popular.html.twig', $data);

@@ -93,11 +93,7 @@ class PackageController extends Controller
                 'vendor' => $req->query->get('vendor'),
             ]);
 
-            $response = new JsonResponse(['packages' => $repo->getPackagesWithFields($filters, $fields)]);
-            $response->setSharedMaxAge(300);
-            $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-            return $response;
+            return $this->cachedJson(['packages' => $repo->getPackagesWithFields($filters, $fields)]);
         }
 
         if ($req->query->get('type')) {
@@ -119,11 +115,7 @@ class PackageController extends Controller
             $names = $filtered;
         }
 
-        $response = new JsonResponse(['packageNames' => $names]);
-        $response->setSharedMaxAge(300);
-        $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-        return $response;
+        return $this->cachedJson(['packageNames' => $names]);
     }
 
     /**
@@ -493,13 +485,10 @@ class PackageController extends Controller
                 $data['versions'] = new \stdClass;
             }
 
-            $response = new JsonResponse(['package' => $data]);
-            if (Killswitch::isEnabled(Killswitch::LINKS_ENABLED) && Killswitch::isEnabled(Killswitch::DOWNLOADS_ENABLED)) {
-                $response->setSharedMaxAge(12 * 3600);
-            }
-            $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-            return $response;
+            return $this->cachedJson(
+                ['package' => $data],
+                (Killswitch::isEnabled(Killswitch::LINKS_ENABLED) && Killswitch::isEnabled(Killswitch::DOWNLOADS_ENABLED)) ? 12 * 3600 : 0
+            );
         }
 
         $version = null;
@@ -664,11 +653,7 @@ class PackageController extends Controller
             }
         }
 
-        $response = new JsonResponse(['package' => $data], 200);
-        $response->setSharedMaxAge(3600);
-        $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-        return $response;
+        return $this->cachedJson(['package' => $data], 3600);
     }
 
     #[Route(path: '/versions/{versionId}.{_format}', name: 'view_version', requirements: ['name' => '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?', 'versionId' => '[0-9]+', '_format' => '(json)'], methods: ['GET'])]
@@ -1196,11 +1181,7 @@ class PackageController extends Controller
             $datePoints['values'][] = [0];
         }
 
-        $response = new JsonResponse($datePoints);
-        $response->setSharedMaxAge(1800);
-        $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-        return $response;
+        return $this->cachedJson($datePoints, 1800);
     }
 
     #[Route(path: '/packages/{name}/dependents.{_format}', name: 'view_package_dependents', requirements: ['name' => '([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?|ext-[A-Za-z0-9_.-]+?)'], defaults: ['_format' => 'html'])]
@@ -1404,11 +1385,7 @@ class PackageController extends Controller
             $datePoints['values'][] = [0];
         }
 
-        $response = new JsonResponse($datePoints);
-        $response->setSharedMaxAge(1800);
-        $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
-
-        return $response;
+        return $this->cachedJson($datePoints, 1800);
     }
 
     #[Route(path: '/packages/{name}/advisories', name: 'view_package_advisories', requirements: ['name' => '([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?|ext-[A-Za-z0-9_.-]+?)'])]

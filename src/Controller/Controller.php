@@ -19,6 +19,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Entity\Package;
 use App\Model\DownloadManager;
 use App\Model\FavoriteManager;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\EventListener\AbstractSessionListener;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -75,5 +77,14 @@ abstract class Controller extends AbstractController
         }
 
         return ['downloads' => $downloads, 'favers' => $favorites];
+    }
+
+    protected function cachedJson(mixed $data, int $sharedMaxAge = 300): JsonResponse
+    {
+        $response = new JsonResponse($data);
+        $response->setSharedMaxAge($sharedMaxAge);
+        $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
+
+        return $response;
     }
 }
