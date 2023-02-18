@@ -60,7 +60,6 @@ use Symfony\Component\Routing\RouterInterface;
 use Predis\Client as RedisClient;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\HttpKernel\EventListener\AbstractSessionListener;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -386,7 +385,7 @@ class PackageController extends Controller
 
     #[IsGranted('ROLE_ANTISPAM', statusCode: 404)]
     #[Route(path: '/spam', name: 'view_spam', defaults: ['_format' => 'html'], methods: ['GET'])]
-    public function viewSpamAction(Request $req, CsrfTokenManagerInterface $csrfTokenManager): Response
+    public function viewSpamAction(Request $req): Response
     {
         $page = max(1, $req->query->getInt('page', 1));
 
@@ -402,7 +401,6 @@ class PackageController extends Controller
         $data['packages'] = $paginator;
         $data['count'] = $count;
         $data['meta'] = $this->getPackagesMetadata($this->favoriteManager, $this->downloadManager, $data['packages']);
-        $data['markSafeCsrfToken'] = $csrfTokenManager->getToken('mark_safe');
 
         $vendorRepo = $this->getEM()->getRepository(Vendor::class);
         $verified = [];
@@ -442,7 +440,7 @@ class PackageController extends Controller
     }
 
     #[Route(path: '/packages/{name}.{_format}', name: 'view_package', requirements: ['name' => '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?', '_format' => '(json)'], defaults: ['_format' => 'html'], methods: ['GET'])]
-    public function viewPackageAction(Request $req, string $name, CsrfTokenManagerInterface $csrfTokenManager, #[CurrentUser] ?User $user = null): Response
+    public function viewPackageAction(Request $req, string $name, #[CurrentUser] ?User $user = null): Response
     {
         if (!Killswitch::isEnabled(Killswitch::PAGES_ENABLED)) {
             return new Response('This page is temporarily disabled, please come back later.', Response::HTTP_BAD_GATEWAY);
@@ -601,7 +599,6 @@ class PackageController extends Controller
         }
 
         if ($this->isGranted('ROLE_DELETE_PACKAGES') || $package->isMaintainer($user)) {
-            $data['deleteVersionCsrfToken'] = $csrfTokenManager->getToken('delete_version');
             $lastJob = $this->getEM()->getRepository(Job::class)->findLatestExecutedJob($package->getId(), 'package:updates');
             $data['lastJobWarning'] = null;
             $data['lastJobStatus'] = $lastJob?->getStatus();
@@ -622,10 +619,6 @@ class PackageController extends Controller
                         break;
                 }
             }
-        }
-
-        if ($this->isGranted('ROLE_ANTISPAM')) {
-            $data['markSafeCsrfToken'] = $csrfTokenManager->getToken('mark_safe');
         }
 
         return $this->render('package/view_package.html.twig', $data);

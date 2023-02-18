@@ -16,9 +16,9 @@
                     </a>
                 {% endif %}
 
-                {% if deleteVersionCsrfToken is defined and deleteVersionCsrfToken is not empty %}
+                {% if is_granted('ROLE_DELETE_PACKAGES') or package.maintainer(app.user) %}
                 <form class="delete-version" action="{{ path("delete_version", {"versionId": version.id}) }}" method="DELETE">
-                    <input type="hidden" name="_token" value="{{ deleteVersionCsrfToken }}" />
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_version') }}" />
                     <i class="submit glyphicon glyphicon-remove"></i>
                 </form>
                 {% endif %}
