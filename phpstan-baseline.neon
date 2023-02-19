@@ -11,11 +11,6 @@ parameters:
 			path: src/Controller/ExploreController.php
 
 		-
-			message: "#^Offset string on array\\<int, int\\> on left side of \\?\\? does not exist\\.$#"
-			count: 1
-			path: src/Controller/PackageController.php
-
-		-
 			message: "#^Parameter \\#1 \\$job of method App\\\\Service\\\\UpdaterWorker\\:\\:process\\(\\) expects App\\\\Entity\\\\Job\\<array\\{id\\: int, update_equal_refs\\: bool, delete_before\\: bool, force_dump\\: bool\\}\\>, App\\\\Entity\\\\Job\\<array\\{id\\: int, update_equal_refs\\: false, delete_before\\: false, force_dump\\: false\\}\\> given\\.$#"
 			count: 1
 			path: src/DataFixtures/PackageFixtures.php
@@ -64,3 +59,8 @@ parameters:
 			message: "#^Parameter \\#1 \\$result of method App\\\\Entity\\\\Job\\<array\\<string, bool\\|int\\|string\\>\\>\\:\\:complete\\(\\) expects array\\{status\\: 'completed'\\|'errored'\\|'failed'\\|'package_deleted'\\|'package_gone'\\|'queued'\\|'reschedule'\\|'started'\\|'timeout', message\\?\\: string, after\\?\\: DateTimeInterface&Throwable, details\\?\\: string, exception\\?\\: Throwable, exceptionMsg\\?\\: string, exceptionClass\\?\\: class\\-string\\<Throwable\\>, results\\?\\: array, \\.\\.\\.\\}, array\\{status\\: 'completed'\\|'errored'\\|'failed'\\|'package_deleted'\\|'package_gone', message\\: string, after\\?\\: DateTimeInterface, details\\?\\: string, exception\\?\\: Throwable, exceptionMsg\\?\\: string, exceptionClass\\?\\: class\\-string\\<Throwable\\>, results\\?\\: array, \\.\\.\\.\\} given\\.$#"
 			count: 1
 			path: src/Service/QueueWorker.php
+
+		-
+			message: "#^Offset string on array\\<int, int\\> on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: src/Statistics/PackageStatsProvider.php
