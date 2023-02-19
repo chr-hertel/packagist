@@ -15,8 +15,6 @@ namespace App\Service;
 use Composer\Pcre\Preg;
 use Composer\Repository\VersionCacheInterface;
 use App\Entity\Package;
-use App\Entity\Version;
-use Composer\Semver\VersionParser;
 
 class VersionCache implements VersionCacheInterface
 {
@@ -60,7 +58,6 @@ class VersionCache implements VersionCacheInterface
 
     public function clearVersion(string $version): void
     {
-        $parser = new VersionParser();
         // handle branch names like 3.x.x or 3.X to make sure they match the normalized 3.x-dev below
         $version = Preg::replace('{(\.x)+}i', '.x', $version);
 
